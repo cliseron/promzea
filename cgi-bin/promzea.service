@@ -1,0 +1,77 @@
+#!/bin/bash
+
+# rtorrent       This is the init script for starting promzea 
+#
+# chkconfig: - 64 36
+# description: Starts and stops the promzea daemon.
+# processname: screen promzea
+### BEGIN INIT INFO
+# Provides: promzea
+# Required-Start:
+# Should-Start:
+# Required-Stop:
+# Default-Start: 2 3 5
+# Default-Stop: 0 1 4 6
+# Short-Description: promzea
+# Description: discover motifs underlying co-regulated genes in maize. 
+### END INIT INFO
+
+#
+#/etc/init.d/promzea
+#
+
+NAME=Promzea
+PID=$(ps ax |grep daemonPromzea.pl |grep -v grep | perl -p -e 's/ *([0-9]+) .*/$1/g' | perl -p -e 's/\n/ /g');
+
+function start {
+        if [ "$PID" = "" ] ; then
+                echo "Starting $NAME...";
+                screen -S $NAME -d -m /var/www/cgi-bin/initPromzea.sh
+                echo "  Done.";
+        else
+                echo "$NAME is already running as $PID.";
+        fi
+}
+
+function stop {
+        if [ "$PID" != "" ] ; then
+                echo "Stoping $NAME...";
+                kill $PID;
+                TIMEOUT=30;
+                START=$( date +%s);
+                while [ $(( $( date +%s) - ${START} )) -lt ${TIMEOUT} ]; do
+			PID=$(ps ax |grep daemonPromzea.pl |grep -v grep | grep SCREEN | perl -p -e 's/ *([0-9]+) .*/$1/g');
+                        if [ "$PID" == "" ]; then break
+                        else sleep 2
+                        fi
+                done
+                if [ "$PID" != "" ] ; then
+                        echo "Error: $NAME would not stop";
+                else
+                        echo "  Done.";
+                fi
+        else
+                echo "$NAME is was not running.";
+        fi
+}
+
+function status {
+        if [ "$PID" = "" ]; then
+                echo "$NAME is not running";
+        else
+                echo "$NAME is running with pid $PID";
+        fi
+}
+
+if [ "$1" = "start" ]; then
+        start
+elif [ "$1" = "stop" ]; then
+        stop
+elif [ "$1" = "restart" ]; then
+        stop
+        start
+elif [ "$1" = "status" ]; then
+        status
+else
+        echo " * Usage: /etc/init.d/$NAME [start|status|stop|restart]";
+fi
